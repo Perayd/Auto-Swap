@@ -1,0 +1,35 @@
+import { ethers } from "ethers";
+import axios from "axios";
+
+const PRIVATE_KEY = "YOUR_PRIVATE_KEY";
+const RPC = "https://bsc-dataseed.binance.org/";
+
+const provider = new ethers.JsonRpcProvider(RPC);
+const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+
+async function autoSwap() {
+  const response = await axios.get("https://li.quest/v1/quote", {
+    params: {
+      fromChain: 56,                // BSC
+      toChain: 137,                 // Polygon
+      fromToken: "0x55d398326f99059fF775485246999027B3197955", // USDT BSC
+      toToken: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",   // USDC Polygon
+      fromAmount: "1000000",        // 1 USDT (6 decimals)
+      fromAddress: wallet.address,
+      slippage: 1
+    }
+  });
+
+  const txData = response.data.transactionRequest;
+
+  const tx = await wallet.sendTransaction({
+    to: txData.to,
+    data: txData.data,
+    value: txData.value || 0,
+    gasLimit: txData.gasLimit
+  });
+
+  console.log("Transaction sent:", tx.hash);
+}
+
+autoSwap();
